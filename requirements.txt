@@ -1,0 +1,29 @@
+# Core dependencies
+torch>=1.9.0
+numpy>=1.20.0
+tqdm>=4.62.0
+pyyaml>=5.4.0
+
+# Point cloud processing
+open3d>=0.15.0
+trimesh>=3.9.0
+scipy>=1.7.0
+
+# Optional for mesh processing
+igl>=2.2.0
+
+# Visualization
+matplotlib>=3.5.0
+plotly>=5.5.0
+
+# Utilities
+scikit-learn>=1.0.0
+h5py>=3.6.0
+tensorboard>=2.8.0
+
+# Optional for parallel processing
+joblib>=1.1.0
+
+# For development
+pytest>=6.2.5
+black>=22.1.0
