@@ -587,60 +587,60 @@ class DiffusionModel(nn.Module):
         return x_0
     
     @torch.no_grad()
-def sample_with_ddim(self, context, num_points, steps=50, eta=0.0):
-    """
-    Accelerated sampling using DDIM (Denoising Diffusion Implicit Models)
-    
-    Args:
-        context: (B, M, C) - Conditional context features
-        num_points: Number of points to generate per sample
-        steps: Number of DDIM sampling steps (typically fewer than DDPM)
-        eta: 0 means fully deterministic, 1 means fully stochastic (DDPM)
+    def sample_with_ddim(self, context, num_points, steps=50, eta=0.0):
+        """
+        Accelerated sampling using DDIM (Denoising Diffusion Implicit Models)
         
-    Returns:
-        x_0: (B, num_points, D) - Generated point cloud
-    """
-    batch_size = context.shape[0]
-    device = context.device
-    
-    # Create DDIM timestep schedule
-    skip = self.steps // steps
-    seq = list(range(0, self.steps, skip))
-    
-    # Start with random noise
-    x_t = torch.randn(batch_size, num_points, self.in_dim, device=device)
-    
-    # Pre-compute alphas for efficiency
-    alpha_cumprod_seq = self.alphas_cumprod[seq]
-    
-    # Iteratively denoise
-    for i in range(len(seq) - 1, -1, -1):
-        t = seq[i]
-        t_tensor = torch.full((batch_size,), t, device=device, dtype=torch.long)
-        t_next = 0 if i == 0 else seq[i - 1]
+        Args:
+            context: (B, M, C) - Conditional context features
+            num_points: Number of points to generate per sample
+            steps: Number of DDIM sampling steps (typically fewer than DDPM)
+            eta: 0 means fully deterministic, 1 means fully stochastic (DDPM)
+            
+        Returns:
+            x_0: (B, num_points, D) - Generated point cloud
+        """
+        batch_size = context.shape[0]
+        device = context.device
         
-        # Get alphas for current timestep (with pre-computed values)
-        alpha_cumprod = alpha_cumprod_seq[i]
-        alpha_cumprod_next = self.alphas_cumprod[t_next]
+        # Create DDIM timestep schedule
+        skip = self.steps // steps
+        seq = list(range(0, self.steps, skip))
         
-        # Predict noise
-        pred_noise = self.predict_noise(x_t, t_tensor, context)
+        # Start with random noise
+        x_t = torch.randn(batch_size, num_points, self.in_dim, device=device)
         
-        # Predict x0
-        pred_x0 = (x_t - torch.sqrt(1 - alpha_cumprod).view(-1, 1, 1) * pred_noise) / \
-                 torch.sqrt(alpha_cumprod).view(-1, 1, 1)
+        # Pre-compute alphas for efficiency
+        alpha_cumprod_seq = self.alphas_cumprod[seq]
+
+        # Iteratively denoise
+        for i in range(len(seq) - 1, -1, -1):
+            t = seq[i]
+            t_tensor = torch.full((batch_size,), t, device=device, dtype=torch.long)
+            t_next = 0 if i == 0 else seq[i - 1]
+            
+            # Get alphas for current timestep (with pre-computed values)
+            alpha_cumprod = alpha_cumprod_seq[i]
+            alpha_cumprod_next = self.alphas_cumprod[t_next]
         
-        # Variance scheduling (eta controls determinism between 0 and 1)
-        c1 = eta * torch.sqrt((1 - alpha_cumprod / alpha_cumprod_next) * (1 - alpha_cumprod_next) / (1 - alpha_cumprod))
-        c2 = torch.sqrt(1 - alpha_cumprod_next - c1**2)
+            # Predict noise
+            pred_noise = self.predict_noise(x_t, t_tensor, context)
         
-        # Add noise only for non-final steps
-        noise = torch.randn_like(x_t) if i > 0 else torch.zeros_like(x_t)
+            # Predict x0
+            pred_x0 = (x_t - torch.sqrt(1 - alpha_cumprod).view(-1, 1, 1) * pred_noise) / \
+                     torch.sqrt(alpha_cumprod).view(-1, 1, 1)
         
-        # Update x_t
-        x_t = torch.sqrt(alpha_cumprod_next).view(-1, 1, 1) * pred_x0 + \
-            c1.view(-1, 1, 1) * noise + \
-            c2.view(-1, 1, 1) * pred_noise
+            # Variance scheduling (eta controls determinism between 0 and 1)
+            c1 = eta * torch.sqrt((1 - alpha_cumprod / alpha_cumprod_next) * (1 - alpha_cumprod_next) / (1 - alpha_cumprod))
+            c2 = torch.sqrt(1 - alpha_cumprod_next - c1**2)
+        
+            # Add noise only for non-final steps
+            noise = torch.randn_like(x_t) if i > 0 else torch.zeros_like(x_t)
+        
+            # Update x_t
+            x_t = torch.sqrt(alpha_cumprod_next).view(-1, 1, 1) * pred_x0 + \
+                c1.view(-1, 1, 1) * noise + \
+                c2.view(-1, 1, 1) * pred_noise
     
     return x_t
     
