@@ -7,6 +7,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import math
 from ..config import cfg
+import numpy as np
+from tqdm import tqdm
 
 class SinusoidalTimeEmbedding(nn.Module):
     """
@@ -582,12 +584,12 @@ class DiffusionModel(nn.Module):
         x_T = torch.randn(batch_size, num_points, self.in_dim, device=device)
         
         # Sample using full reverse diffusion
-        x_0, _ = self.reverse_diffusion(x_T, context, steps)
+        x_0, _ = self.sample_with_ddim(context, num_points, steps, eta=0.0)
         
         return x_0
     
     @torch.no_grad()
-    def sample_with_ddim(self, context, num_points, steps=50, eta=0.0):
+    def sample_with_ddim(self, context, num_points, steps=6, eta=0.0):
         """
         Accelerated sampling using DDIM (Denoising Diffusion Implicit Models)
         
