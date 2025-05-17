@@ -34,7 +34,7 @@ class EdgeConvBlock(nn.Module):
         """
         #compute KNN graph 
         batch = torch.zeros(pos.shape[0], dtype = torch.long, device = pos.device)
-        edge_index = torch_cluster.knn_graph(pos, k=self.k, batch = batch, loop = Flase)
+        edge_index = torch_cluster.knn_graph(pos, k=self.k, batch = batch, loop = False)
 
         #get features for source and target nodes
         x_j = x[edge_index[1]]  # Target node features (N*k, C)
@@ -62,7 +62,7 @@ class ResidualNetwork(nn.Module):
         self.k = k
 
         #EdgeConv blocks
-        self.edge_conv1 = EdgeConvBLock(3,64,k =k)
+        self.edge_conv1 = EdgeConvBlock(3,64,k =k)
         self.edge_conv2 = EdgeConvBlock(64, 64, k=k)
         self.edge_conv3 = EdgeConvBlock(64, 64, k=k)
                 
@@ -144,7 +144,7 @@ class SVDPlaneProjection(nn.Module):
             cov = centered_points.T @ centered_points
 
             #SVD for plane fittinf
-            U,S,V = torch.svd(cov)
+            U,S,V = torch.linalg.svd(cov)
 
             #extract refined normal (eigenvector with smallest eigenvalue)
             refined_normal = V[:, 2]
