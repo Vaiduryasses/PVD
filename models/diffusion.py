@@ -584,7 +584,7 @@ class DiffusionModel(nn.Module):
         x_T = torch.randn(batch_size, num_points, self.in_dim, device=device)
         
         # Sample using full reverse diffusion
-        x_0, _ = self.sample_with_ddim(context, num_points, steps, eta=0.0)
+        x_0 = self.sample_with_ddim(context, num_points, steps, eta=0.0)
         
         return x_0
     
@@ -606,8 +606,7 @@ class DiffusionModel(nn.Module):
         device = context.device
         
         # Create DDIM timestep schedule
-        skip = self.steps // steps
-        seq = list(range(0, self.steps, skip))
+        seq = [0, 9, 14, 19, 24, 29] 
         
         # Start with random noise
         x_t = torch.randn(batch_size, num_points, self.in_dim, device=device)
