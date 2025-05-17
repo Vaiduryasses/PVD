@@ -13,7 +13,7 @@ from .diffusion import DiffusionModel
 from .refinement import RefinementModule
 from .losses import ProxyDecoderLoss, DiffusionLoss, ResidualLoss
 
-class PaCoPP(nn.Module):
+class PVD(nn.Module):
     """
     PVD model pipeline
 
