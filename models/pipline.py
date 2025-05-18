@@ -81,13 +81,13 @@ class PVD(nn.Module):
         # Diffusion
         if mode == 'train':
             # In training, compute diffusion loss
-            diffusion_loss = self.diffusion.train_step(points, condition_features)
+            diffusion_loss, pred_noise, true_noise = self.diffusion(points, condition_features)
             dense_points = None
         else:
             # In inference, run DDIM sampling
-            dense_points = self.diffusion.ddim_sample(
-                coarse_points if coarse_points.shape[0] > 0 else points[:1000], 
-                condition_features,
+            dense_points = self.diffusion.sample_with_ddim(
+                context=condition_features,
+                num_points=cfg.output_points,
                 steps=cfg.diffusion_steps_infer
             )
             diffusion_loss = None
@@ -162,5 +162,58 @@ class PVD(nn.Module):
         outputs = self.forward(points, voxel_features, voxel_coords, mode='inference')
         
         return outputs['final_points'], outputs['proxy_outputs']
+
+    def visualize_intermediate(self, points, voxel_features, voxel_coords):
+        """
+        Generate intermediate results for visualization.
+        
+        Args:
+            points: (N, 3) - Input point cloud
+            voxel_features: (V, 35) - Voxel features
+            voxel_coords: (V, 3) - Voxel coordinates
+            
+        Returns:
+            visualization_outputs: dict - All intermediate results
+        """
+        # Run entire pipeline
+        outputs = self.forward(points, voxel_features, voxel_coords, mode='inference')
+        
+        # Add input points to outputs
+        outputs['input_points'] = points
+        
+        # Generate diffusion intermediate steps (6 steps)
+        if outputs['condition_features'] is not None:
+            # Start from random noise
+            batch_size = outputs['condition_features'].shape[0]
+            device = outputs['condition_features'].device
+            x_T = torch.randn(batch_size, cfg.num_output_points, 3, device=device)
+            
+            # Get DDIM timestep sequence 
+            seq = [0, 5, 10, 15, 20, 25, 29]  
+            
+            # Store intermediate results
+            intermediate_points = [x_T]
+            
+            # DDIM sampling with intermediate results
+            x_t = x_T
+            for i in range(len(seq) - 1, 0, -1):
+                # Get current step
+                t = seq[i]
+                t_tensor = torch.full((batch_size,), t, device=device, dtype=torch.long)
+                
+                # Predict noise
+                noise_pred = self.diffusion.predict_noise(x_t, t_tensor, outputs['condition_features'])
+                
+                # Single DDIM step
+                x_t = self.diffusion.ddim_step(
+                    x_t, t, seq[i-1], noise_pred, outputs['condition_features'], eta=0.0
+                )
+                
+                # Save intermediate
+                intermediate_points.append(x_t)
+            
+            outputs['diffusion_intermediates'] = intermediate_points
+        
+        return outputs
 
 

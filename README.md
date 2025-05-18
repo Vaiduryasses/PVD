@@ -71,6 +71,32 @@ Alternatively, use the provided training script:
 bash scripts/train.sh --config configs/default.yaml --output_dir results/ --batch_size 8 --lr 0.0001 --max_epochs 100 --gpus 0
 ```
 
+### Testing
+
+Basic test with new metrics:
+
+```bash
+python -m pvd.test --config configs/test_config.yaml --checkpoint checkpoints/best_model.pt --output_dir results
+```
+
+Specify failure threshold:
+
+```bash
+python -m pvd.test --config configs/test_config.yaml --checkpoint checkpoints/best_model.pt --output_dir results --failure_threshold 0.05
+```
+
+Visualize test results:
+
+```bash
+python -m pvd.test --config configs/test_config.yaml --checkpoint checkpoints/best_model.pt --output_dir results --visualize --save_vis
+```
+
+Use specific GPUs:
+
+```bash
+python -m pvd.test --config configs/test_config.yaml --checkpoint checkpoints/best_model.pt --gpu_ids 0 1 --batch_size 2
+```
+
 ### Inference
 
 Generate point clouds from input:

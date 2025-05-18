@@ -789,7 +789,7 @@ def train(args):
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(description="Train PACO model")
+    parser = argparse.ArgumentParser(description="Train PVD model")
 
     parser.add_argument("--config", type=str, default=None, 
 
